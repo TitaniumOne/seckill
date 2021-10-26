@@ -66,14 +66,15 @@ public class GoodsController {
             // 秒杀还未开始
             secKillStatus = 0;
             remainSeconds = (int)((startDate.getTime() - nowDate.getTime())/1000);
-
-        } else if(nowDate.after(endDate)) {
-            // 秒杀已经结束
-            secKillStatus = 2;
-            remainSeconds = -1;
         } else {
             // 秒杀正在进行
             secKillStatus = 1;
+            remainSeconds = 0;
+        }
+
+        if(nowDate.after(endDate)) {
+            // 秒杀已经结束
+            secKillStatus = 2;
             remainSeconds = -1;
         }
         model.addAttribute("remainSeconds", remainSeconds);

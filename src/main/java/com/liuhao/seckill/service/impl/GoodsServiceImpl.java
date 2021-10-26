@@ -26,7 +26,6 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
 
     /**
      * 获取商品列表
-     * @return
      */
     @Override
     public List<GoodsVo> findGoodsVo() {
@@ -40,7 +39,6 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
      */
     @Override
     public GoodsVo findGoodsVoByGoodsId(Long goodsId) {
-        GoodsVo goodsVo = goodsMapper.findGoodsVoById(goodsId);
-        return goodsVo;
+        return goodsMapper.findGoodsVoByGoodsId(goodsId);
     }
 }

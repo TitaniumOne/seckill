@@ -4,7 +4,9 @@ import com.liuhao.seckill.pojo.User;
 import com.liuhao.seckill.service.IGoodsService;
 import com.liuhao.seckill.service.IUserService;
 import com.liuhao.seckill.service.impl.UserServiceImpl;
+import com.liuhao.seckill.vo.DetailVo;
 import com.liuhao.seckill.vo.GoodsVo;
+import com.liuhao.seckill.vo.RespBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -68,6 +70,7 @@ public class GoodsController {
         return html;
     }
 
+    /*
     @RequestMapping(value = "/toDetail/{goodsId}", produces = "text/html;charset=utf-8")
     @ResponseBody
     public String toDetail(Model model, User user, @PathVariable Long goodsId, HttpServletRequest request, HttpServletResponse response) {
@@ -114,5 +117,41 @@ public class GoodsController {
             valueOperations.set("goodsDetail:" + goodsId, html, 60, TimeUnit.SECONDS);
         }
         return html;
+    }
+    */
+    // 页面静态化后，前端ajax请求接口，接口只需要返回对象
+    @RequestMapping("/detail/{goodsId}")
+    @ResponseBody
+    public RespBean toDetail(Model model, User user, @PathVariable Long goodsId) {
+        GoodsVo goodsVo = goodsService.findGoodsVoByGoodsId(goodsId);
+        System.out.println(goodsVo.getGoodsName());
+        Date startDate = goodsVo.getStartDate();
+        Date endDate = goodsVo.getEndDate();
+        Date nowDate = new Date();
+
+        // 秒杀状态
+        int secKillStatus = 0;
+        int remainSeconds = 0;
+        if(nowDate.before(startDate)) {
+            // 秒杀还未开始
+            secKillStatus = 0;
+            remainSeconds = (int)((startDate.getTime() - nowDate.getTime())/1000);
+        } else {
+            // 秒杀正在进行
+            secKillStatus = 1;
+            remainSeconds = 0;
+        }
+
+        if(nowDate.after(endDate)) {
+            // 秒杀已经结束
+            secKillStatus = 2;
+            remainSeconds = -1;
+        }
+        DetailVo detailVo = new DetailVo();
+        detailVo.setUser(user);
+        detailVo.setRemainSeconds(remainSeconds);
+        detailVo.setSecKillStatus(secKillStatus);
+        detailVo.setGoodsVo(goodsVo);
+        return RespBean.success(detailVo);
     }
 }

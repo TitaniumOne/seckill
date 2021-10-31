@@ -16,5 +16,4 @@ import com.liuhao.seckill.vo.GoodsVo;
  */
 public interface ISeckillOrdersService extends IService<SeckillOrders> {
 
-    Orders secKill(User user, GoodsVo goodsVo);
 }

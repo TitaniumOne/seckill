@@ -26,49 +26,4 @@ import org.springframework.stereotype.Service;
 @Service
 public class SeckillOrdersServiceImpl extends ServiceImpl<SeckillOrdersMapper, SeckillOrders> implements ISeckillOrdersService {
 
-    @Autowired
-    private ISeckillGoodsService seckillGoodsService;
-
-    @Autowired
-    private OrdersMapper ordersMapper;
-
-    @Autowired
-    private ISeckillOrdersService seckillOrdersService;
-
-    /**
-     * 秒杀实现
-     * @param user
-     * @param goodsVo
-     * @return
-     */
-    @Override
-    public Orders secKill(User user, GoodsVo goodsVo) {
-        //秒杀商品表
-        SeckillGoods secKillGoods = seckillGoodsService.getOne(new QueryWrapper<SeckillGoods>().eq("goods_id", goodsVo.getId()));
-        //注意不要直接用前端传输的库存数，容易作假
-        secKillGoods.setStockCount(secKillGoods.getStockCount() - 1);
-        seckillGoodsService.updateById(secKillGoods);
-
-        //生成订单
-        Orders order = new Orders();
-        order.setUserId(user.getId());
-        order.setGoodsId(goodsVo.getId());
-        order.setDeliveryAddrId(0L);
-        order.setGoodsName(goodsVo.getGoodsName());
-        order.setGoodsCount(1);
-        order.setGoodsPrice(secKillGoods.getSeckillPrice());
-        order.setOrderChannel(1);
-        order.setStatus(0);
-        order.setCreateDate(new Date());
-        ordersMapper.insert(order);
-
-        //生成秒杀订单
-        SeckillOrders seckillOrders = new SeckillOrders();
-        seckillOrders.setUserId(user.getId());
-        seckillOrders.setOrderId(order.getId());
-        seckillOrders.setGoodsId(goodsVo.getId());
-        seckillOrdersService.save(seckillOrders);
-
-        return order;
-    }
 }

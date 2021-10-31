@@ -5,14 +5,18 @@ import com.liuhao.seckill.pojo.Orders;
 import com.liuhao.seckill.pojo.SeckillOrders;
 import com.liuhao.seckill.pojo.User;
 import com.liuhao.seckill.service.IGoodsService;
+import com.liuhao.seckill.service.IOrdersService;
 import com.liuhao.seckill.service.ISeckillOrdersService;
 import com.liuhao.seckill.vo.GoodsVo;
+import com.liuhao.seckill.vo.RespBean;
 import com.liuhao.seckill.vo.RespBeanEnum;
 import lombok.extern.java.Log;
+import lombok.extern.log4j.Log4j;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/secKill")
@@ -23,31 +27,62 @@ public class SecKillController {
     @Autowired
     private ISeckillOrdersService seckillOrdersService;
 
-    @RequestMapping("/doSecKill")
-    public String doSecKill(Model model, User user, Long goodsId) {
+    @Autowired
+    private IOrdersService ordersService;
+    //
+    // @RequestMapping("/doSecKill")
+    // public String doSecKill(Model model, User user, Long goodsId) {
+    //     if(user == null) {
+    //         return "login";
+    //     }
+    //     model.addAttribute("user", user);
+    //     GoodsVo goodsVo = goodsService.findGoodsVoByGoodsId(goodsId);
+    //
+    //     //检查库存
+    //     if(goodsVo.getStockCount() < 1) {
+    //         model.addAttribute("errorMsg", RespBeanEnum.EMPTY_STOCK.getMessage());
+    //         return "secKillFail";
+    //     }
+    //
+    //     //判断是否重复抢购
+    //     SeckillOrders seckillOrders = seckillOrdersService.getOne(new QueryWrapper<SeckillOrders>().eq("user_id", user.getId()).eq("goods_id", goodsId));
+    //     if(seckillOrders != null) {
+    //         model.addAttribute("errorMsg", RespBeanEnum.REPEAT_ERR.getMessage());
+    //         return "secKillFail";
+    //     }
+    //
+    //     //进入详情页面
+    //     Orders order = seckillOrdersService.secKill(user, goodsVo);
+    //     model.addAttribute("order", order);
+    //     model.addAttribute("goods", goodsVo);
+    //     return "orderDetail";
+    // }
+
+
+    @RequestMapping(value="/doSecKill", method=RequestMethod.POST)
+    @ResponseBody
+    public RespBean doSecKill(Model model, User user, Long goodsId) {
+        System.out.println(goodsId);
         if(user == null) {
-            return "login";
+            return RespBean.error(RespBeanEnum.SESSION_ERROR);
         }
-        model.addAttribute("user", user);
         GoodsVo goodsVo = goodsService.findGoodsVoByGoodsId(goodsId);
 
         //检查库存
         if(goodsVo.getStockCount() < 1) {
             model.addAttribute("errorMsg", RespBeanEnum.EMPTY_STOCK.getMessage());
-            return "secKillFail";
+            return RespBean.error(RespBeanEnum.EMPTY_STOCK);
         }
 
-        //判断是否重复抢购
+        // 判断是否重复抢购
         SeckillOrders seckillOrders = seckillOrdersService.getOne(new QueryWrapper<SeckillOrders>().eq("user_id", user.getId()).eq("goods_id", goodsId));
         if(seckillOrders != null) {
             model.addAttribute("errorMsg", RespBeanEnum.REPEAT_ERR.getMessage());
-            return "secKillFail";
+            return RespBean.error(RespBeanEnum.REPEAT_ERR);
         }
 
         //进入详情页面
-        Orders order = seckillOrdersService.secKill(user, goodsVo);
-        model.addAttribute("order", order);
-        model.addAttribute("goods", goodsVo);
-        return "orderDetail";
+        Orders order = ordersService.secKill(user, goodsVo);
+        return RespBean.success(order);
     }
 }

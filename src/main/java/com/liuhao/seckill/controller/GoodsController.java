@@ -124,7 +124,7 @@ public class GoodsController {
     @ResponseBody
     public RespBean toDetail(Model model, User user, @PathVariable Long goodsId) {
         GoodsVo goodsVo = goodsService.findGoodsVoByGoodsId(goodsId);
-        System.out.println(goodsVo.getGoodsName());
+        // System.out.println(goodsVo.getGoodsName());
         Date startDate = goodsVo.getStartDate();
         Date endDate = goodsVo.getEndDate();
         Date nowDate = new Date();

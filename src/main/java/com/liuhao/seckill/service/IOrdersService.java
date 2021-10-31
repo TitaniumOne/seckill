@@ -2,6 +2,9 @@ package com.liuhao.seckill.service;
 
 import com.liuhao.seckill.pojo.Orders;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.liuhao.seckill.pojo.User;
+import com.liuhao.seckill.vo.GoodsVo;
+import com.liuhao.seckill.vo.OrderDetailVo;
 
 /**
  * <p>
@@ -13,4 +16,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface IOrdersService extends IService<Orders> {
 
+    Orders secKill(User user, GoodsVo goodsVo);
+
+    OrderDetailVo detail(Long orderId);
 }

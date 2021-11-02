@@ -45,6 +45,7 @@ public class GoodsController {
      * 跳转到商品列表页
      * 优化前QPS：2079/s
      * 缓存后QPS：6218/s
+     *          2819/s
      * @param user
      * @param model
      * @return

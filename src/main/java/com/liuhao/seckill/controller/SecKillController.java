@@ -10,14 +10,18 @@ import com.liuhao.seckill.service.ISeckillOrdersService;
 import com.liuhao.seckill.vo.GoodsVo;
 import com.liuhao.seckill.vo.RespBean;
 import com.liuhao.seckill.vo.RespBeanEnum;
-import lombok.extern.java.Log;
-import lombok.extern.log4j.Log4j;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+
+/**
+ * 5000个用户
+ * 秒杀10个商品QPS：2571/s
+ */
 @Controller
 @RequestMapping("/secKill")
 public class SecKillController {
@@ -29,6 +33,9 @@ public class SecKillController {
 
     @Autowired
     private IOrdersService ordersService;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
     //
     // @RequestMapping("/doSecKill")
     // public String doSecKill(Model model, User user, Long goodsId) {
@@ -62,7 +69,6 @@ public class SecKillController {
     @RequestMapping(value="/doSecKill", method=RequestMethod.POST)
     @ResponseBody
     public RespBean doSecKill(Model model, User user, Long goodsId) {
-        System.out.println(goodsId);
         if(user == null) {
             return RespBean.error(RespBeanEnum.SESSION_ERROR);
         }
@@ -75,9 +81,9 @@ public class SecKillController {
         }
 
         // 判断是否重复抢购
-        SeckillOrders seckillOrders = seckillOrdersService.getOne(new QueryWrapper<SeckillOrders>().eq("user_id", user.getId()).eq("goods_id", goodsId));
+        // SeckillOrders seckillOrders = seckillOrdersService.getOne(new QueryWrapper<SeckillOrders>().eq("user_id", user.getId()).eq("goods_id", goodsId));
+        SeckillOrders seckillOrders = (SeckillOrders) redisTemplate.opsForValue().get("order:" + user.getId() + ":" + goodsVo.getId());
         if(seckillOrders != null) {
-            model.addAttribute("errorMsg", RespBeanEnum.REPEAT_ERR.getMessage());
             return RespBean.error(RespBeanEnum.REPEAT_ERR);
         }
 

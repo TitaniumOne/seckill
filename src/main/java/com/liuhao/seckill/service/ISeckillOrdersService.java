@@ -16,4 +16,5 @@ import com.liuhao.seckill.vo.GoodsVo;
  */
 public interface ISeckillOrdersService extends IService<SeckillOrders> {
 
+    Long getResult(User user, Long goodsId);
 }

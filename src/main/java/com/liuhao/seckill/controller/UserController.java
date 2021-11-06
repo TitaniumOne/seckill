@@ -1,8 +1,11 @@
 package com.liuhao.seckill.controller;
 
 
+import com.liuhao.seckill.rabbitmq.MQSender;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
  * <p>
@@ -15,5 +18,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @Controller
 @RequestMapping("/user")
 public class UserController {
+    @Autowired
+    private MQSender mqSender;
 
+    // /**
+    //  * 测试发送RabbitMq消息
+    //  */
+    // @RequestMapping("/mq")
+    // @ResponseBody
+    // public void mq(){
+    //     mqSender.send("hello!!!");
+    // }
 }

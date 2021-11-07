@@ -1,6 +1,7 @@
 package com.liuhao.seckill.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.liuhao.seckill.exception.GlobalException;
 import com.liuhao.seckill.pojo.Orders;
 import com.liuhao.seckill.pojo.SecKillMessage;
 import com.liuhao.seckill.pojo.SeckillOrders;
@@ -15,6 +16,8 @@ import com.liuhao.seckill.vo.RespBean;
 import com.liuhao.seckill.vo.RespBeanEnum;
 
 import com.rabbitmq.tools.json.JSONUtil;
+import com.wf.captcha.ArithmeticCaptcha;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -25,10 +28,13 @@ import org.springframework.ui.Model;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -37,6 +43,7 @@ import java.util.Map;
  * rabbitMq QPS: 3224/s
  * lua分布式锁 QPS: 3083/s
  */
+@Slf4j
 @Controller
 @RequestMapping("/secKill")
 public class SecKillController implements InitializingBean {
@@ -60,37 +67,67 @@ public class SecKillController implements InitializingBean {
 
     private Map<Long, Boolean> emptyStockMap = new HashMap<>();
 
-    @RequestMapping(value="/doSecKill", method=RequestMethod.POST)
+
+    @RequestMapping(value = "captcha", method = RequestMethod.GET)
+    public void verifyCode(User user, Long goodsId, HttpServletResponse response) {
+        if(user == null || goodsId < 0) {
+            throw new GlobalException(RespBeanEnum.REQUEST_ILLEGAL);
+        }
+        // 设置请求头为输出图片类型
+        response.setContentType("image/gif");
+        response.setHeader("Pragma", "No-cache");  // 不能缓存，避免刷新后是旧的验证码
+        response.setHeader("Cache-Control", "no-cache");
+        response.setDateHeader("Expires", 0);
+
+        // 生成的验证码放入redis
+        ArithmeticCaptcha captcha = new ArithmeticCaptcha(130, 32, 3);
+        redisTemplate.opsForValue().set("captcha:" + user.getId() + ":" + goodsId, captcha.text(), 300, TimeUnit.SECONDS);
+        // 获取验证码
+        try {
+            captcha.out(response.getOutputStream());
+        } catch (IOException e) {
+            log.error("验证码生成失败", e.getMessage());
+        }
+    }
+
+    /**
+     * 获取秒杀地址
+     * @param user
+     * @param goodsId
+     * @return
+     */
+    @RequestMapping(value = "/path", method = RequestMethod.GET)
     @ResponseBody
-    public RespBean doSecKill(Model model, User user, Long goodsId) {
+    public RespBean getPath(User user, Long goodsId, String captcha) {
         if(user == null) {
             return RespBean.error(RespBeanEnum.SESSION_ERROR);
         }
 
-        /*
-        GoodsVo goodsVo = goodsService.findGoodsVoByGoodsId(goodsId);
-        //检查库存
-        if(goodsVo.getStockCount() < 1) {
-            model.addAttribute("errorMsg", RespBeanEnum.EMPTY_STOCK.getMessage());
-            return RespBean.error(RespBeanEnum.EMPTY_STOCK);
+        boolean isChecked = ordersService.checkCaptcha(user, goodsId, captcha);
+        if(!isChecked) {
+            return RespBean.error(RespBeanEnum.ERROR_CAPTCHA);
         }
+        // 用户+商品编号 对应一个path
+        String str = ordersService.createPath(user, goodsId);
+        return RespBean.success(str);
+    }
 
-        // 判断是否重复抢购
-        // SeckillOrders seckillOrders = seckillOrdersService.getOne(new QueryWrapper<SeckillOrders>().eq("user_id", user.getId()).eq("goods_id", goodsId));
-        SeckillOrders seckillOrders = (SeckillOrders) redisTemplate.opsForValue().get("order:" + user.getId() + ":" + goodsVo.getId());
-        if(seckillOrders != null) {
-            return RespBean.error(RespBeanEnum.REPEAT_ERR);
+
+    @RequestMapping(value="/{path}/doSecKill", method=RequestMethod.POST)
+    @ResponseBody
+    public RespBean doSecKill(@PathVariable String path, User user, Long goodsId) {
+        if(user == null) {
+            return RespBean.error(RespBeanEnum.SESSION_ERROR);
         }
-
-        //进入详情页面
-        Orders order = ordersService.secKill(user, goodsVo);
-        return RespBean.success(order);
-        */
+        ValueOperations valueOperations = redisTemplate.opsForValue();
+        boolean isLegal = ordersService.checkPath(user, goodsId, path);
+        if(!isLegal) {
+            return RespBean.error(RespBeanEnum.REQUEST_ILLEGAL);
+        }
 
         /**
          * 预减库存优化
          */
-        ValueOperations valueOperations = redisTemplate.opsForValue();
         // 判断是否重复抢购
         SeckillOrders seckillOrders = seckillOrdersService.getOne(new QueryWrapper<SeckillOrders>().eq("user_id", user.getId()).eq("goods_id", goodsId));
         if(seckillOrders != null) {

@@ -1,6 +1,7 @@
 package com.liuhao.seckill.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.liuhao.seckill.config.AccessLimit;
 import com.liuhao.seckill.exception.GlobalException;
 import com.liuhao.seckill.pojo.Orders;
 import com.liuhao.seckill.pojo.SecKillMessage;
@@ -96,6 +97,7 @@ public class SecKillController implements InitializingBean {
      * @param goodsId
      * @return
      */
+    @AccessLimit(second=5, maxCount=5, needLogin=true)
     @RequestMapping(value = "/path", method = RequestMethod.GET)
     @ResponseBody
     public RespBean getPath(User user, Long goodsId, String captcha) {

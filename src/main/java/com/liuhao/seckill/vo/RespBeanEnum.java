@@ -28,6 +28,7 @@ public enum RespBeanEnum {
     REPEAT_ERR(500501,"该商品每人限购一件"),
     REQUEST_ILLEGAL(500502, "请求非法，请重试"),
     ERROR_CAPTCHA(500503, "验证码填写错误"),
+    ACCESS_LIMIT_REACHED(500504,"访问过于频繁，请稍后"),
 
     // 订单模块5003xx
     ORDER_NOT_EXIST(500300,"订单信息不存在");
